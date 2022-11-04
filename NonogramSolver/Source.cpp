@@ -114,8 +114,8 @@ bool isValid(const Clues& topClues, const Clues& sideClues,
         if (!isListValid(row, clues)) { return false; }
 
         // Populate column of gridCols
-        for (int x = 0; x < row.size(); ++x) {
-            gridCols[x][rowIndex] = row[x];
+        for (int columnIndex = 0; columnIndex < row.size(); ++columnIndex) {
+            gridCols[columnIndex][rowIndex] = row[columnIndex];
         }
     }
     
@@ -128,17 +128,17 @@ bool isValid(const Clues& topClues, const Clues& sideClues,
     return true;
 }
 
-PossibleSoluton generate(const Clues& topClues, const Clues& sideClues, int index, Nonogram nonogram) {
+PossibleSoluton solve(const Clues& topClues, const Clues& sideClues, int index, Nonogram nonogram) {
 
-    //static std::set<Nonogram> alreadyGenerated;
+    // static std::set<Nonogram> alreadyGenerated;
 
     const int rows = topClues.size();
     const int cols = sideClues.size();
 
     if (index >= rows * cols) { 
-       // static int boardsGenerated = 0;
-       //std::cout << ++boardsGenerated << "\n";
-        //if (!alreadyGenerated.insert(nonogram).second) { std::cout << "Already Generated!\n";  exit(-1); }
+        // static int boardsGenerated = 0;
+        // std::cout << ++boardsGenerated << "\n";
+        // if (!alreadyGenerated.insert(nonogram).second) { std::cout << "Already Generated!\n";  exit(-1); }
         if (isValid(topClues, sideClues, nonogram)) {
           
             return std::optional{ nonogram };
@@ -151,10 +151,10 @@ PossibleSoluton generate(const Clues& topClues, const Clues& sideClues, int inde
     int xIndex = index % sideClues.size();
     int yIndex = index / sideClues.size();
 
-    auto option1 = generate(topClues, sideClues, index + 1, nonogram);
+    auto option1 = solve(topClues, sideClues, index + 1, nonogram);
 
     nonogram[xIndex][yIndex] = true;
-    auto option2 = generate(topClues, sideClues, index + 1, nonogram);
+    auto option2 = solve(topClues, sideClues, index + 1, nonogram);
 
     return option1 == std::nullopt ? option2 : option1;
 
@@ -169,7 +169,7 @@ PossibleSoluton solve(const Clues& topClues, const Clues& sideClues) {
         nonogramData.push_back(NonogramRow(topClues.size(), false));
     }
 
-    return generate(topClues, sideClues, 0, nonogramData);
+    return solve(topClues, sideClues, 0, nonogramData);
 
 }
 
@@ -195,7 +195,7 @@ int main() {
     Clues topClues = { { 2 }, { 2 }, { 1 } };
     Clues sideClues = { { 1 }, { 2 }, { { 1, 1 } } };
 
-    auto [nonogram, defNonoHori, defNonoVert] = createNonogram();
+    auto [ nonogram, defNonoHori, defNonoVert] = createNonogram();
     bool valid = isValid(defNonoHori, defNonoVert, nonogram);
 
     std::cout << solve(topClues, sideClues);
