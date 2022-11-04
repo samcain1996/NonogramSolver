@@ -1,34 +1,63 @@
 #include <vector>
 #include <iostream>
 #include <optional>
-#include <set>
+#include <string>
+// #include <set>
 
 using NonogramRow = std::vector<bool>;
-using RowGroup = std::vector<int>;
+using RowClues    = std::vector<int>;
 
-using NonogramData = std::vector<NonogramRow>;
-using NonogramGroups = std::vector<RowGroup>;
+using Nonogram = std::vector<NonogramRow>;
+using Clues = std::vector<RowClues>;
 
-using Nonogram = std::pair<NonogramData, std::pair<NonogramGroups, NonogramGroups>>;
+using PossibleSoluton = std::optional<Nonogram>;
 
-bool validDimensions(const Nonogram& nonogram) {
+// Defines how to print a solution
+std::ostream& operator<<(std::ostream& os, const PossibleSoluton& possibleSolution) {
 
-    const NonogramData& nonogramData = nonogram.first;
+    if (possibleSolution.has_value()) {
+        
+        const Nonogram& solution = possibleSolution.value();
+        const int numberOfYUnits = solution.size();
+        const int numberofXUnits = solution[0].size();
 
-    const NonogramGroups& horizontalGroups = nonogram.second.first;
-    const NonogramGroups& verticalGroups = nonogram.second.second;
+        for (int x = 0; x < numberofXUnits; ++x) {
 
-    const int expectedSize = horizontalGroups.size() * verticalGroups.size();
-    const int actualSize = nonogramData.size() <= 0 ? 0 : nonogramData.size() * nonogramData[0].size();
+            std::string rowStr = "";
+
+            for (int y = 0; y < numberOfYUnits; ++y) {
+                rowStr += solution[x][y] ? "X" : "O";
+            }
+            os << rowStr << "\n";
+        }
+
+        os << "\n";
+
+    }
+
+    // No solution
+    else {
+        os << "No solution found" << std::endl;
+    }
+
+    return os;
+}
+
+// Returns whether the size of the nanogram matches the clues
+bool validDimensions(const Nonogram& nonogram, const Clues& topClues, const Clues& sideClues) {
+
+    const int expectedSize = topClues.size() * sideClues.size();
+    const int actualSize = nonogram.size() <= 0 ? 0 : nonogram.size() * nonogram[0].size();
 
     return expectedSize == actualSize;
 
 }
 
-bool isListValid(const NonogramRow& list, const RowGroup& Groups) {
+// Returns whether an individual row or column is valid
+bool isListValid(const NonogramRow& list, const RowClues& listClues) {
 
-    RowGroup groups(Groups);
-    int groupIndex = -1;
+    RowClues clues(listClues);
+    int clueIndex = -1;
 
     bool element = list[0];
     bool prev = false;
@@ -42,47 +71,47 @@ bool isListValid(const NonogramRow& list, const RowGroup& Groups) {
 
             // If there are still elements left in current group OR 
             // the next group index is out of bounds, return false
-            if ( (groupIndex != -1 && groups[groupIndex] > 0) || ++groupIndex >= groups.size()) { 
+            if ( (clueIndex != -1 && clues[clueIndex] > 0) || ++clueIndex >= clues.size()) { 
                 return false; 
             }
         }
         else if (!element) { prev = element; continue; }
 
         if (element) {
-            groups[groupIndex]--;
+            clues[clueIndex]--;
         }
 
-        if (groups[groupIndex] < 0) { return false; }
+        if (clues[clueIndex] < 0) { return false; }
 
         prev = element;
 
     }
 
-    for (int i = 0; i < groups.size(); ++i) {
-        if (groups[i] != 0) { return false; }
+    for (int i = 0; i < clues.size(); ++i) {
+        if (clues[i] != 0) { return false; }
     }
 
     return true;
 }
 
-bool isValid(const NonogramGroups& horiNumbers, const NonogramGroups& vertNumbers,
-       const NonogramData& grid) {
+bool isValid(const Clues& topClues, const Clues& sideClues,
+       const Nonogram& grid) {
 
     // If the dimensions don't match, it cannot be valid
-    if (!validDimensions({ grid, {horiNumbers, vertNumbers} })) { return false; }
+    if (!validDimensions(grid, topClues, sideClues)) { return false; }
 
     // Number of rows and columns expected in the nonogram
-    const int cols = horiNumbers.size();
-    const int rows = vertNumbers.size();
+    const int cols = topClues.size();
+    const int rows = sideClues.size();
 
-    NonogramData gridCols(cols, NonogramRow(rows));  // Same as grid but flipped 90 degrees
+    Nonogram gridCols(cols, NonogramRow(rows));  // Same as grid but flipped 90 degrees
 
     for (int rowIndex = 0; rowIndex < rows; ++rowIndex) {
 
         const NonogramRow& row = grid[rowIndex];
-        const RowGroup groups(vertNumbers[rowIndex]);
+        const RowClues clues(sideClues[rowIndex]);
 
-        if (!isListValid(row, groups)) { return false; }
+        if (!isListValid(row, clues)) { return false; }
 
         // Populate column of gridCols
         for (int x = 0; x < row.size(); ++x) {
@@ -92,49 +121,25 @@ bool isValid(const NonogramGroups& horiNumbers, const NonogramGroups& vertNumber
     
     for (int colIndex = 0; colIndex < cols; ++colIndex) {
 
-        if (!isListValid(gridCols[colIndex], horiNumbers[colIndex])) { return false; }
+        if (!isListValid(gridCols[colIndex], topClues[colIndex])) { return false; }
 
     }
 
     return true;
 }
 
-bool solve(const NonogramGroups& horiNumbers, const NonogramGroups& vertNumbers, int index, NonogramData curGrid, NonogramData& solution) {
+PossibleSoluton generate(const Clues& topClues, const Clues& sideClues, int index, Nonogram nonogram) {
 
-    // Convert index to X,Y coordinates
-    int xIndex = index % vertNumbers.size();
-    int yIndex = index / vertNumbers.size();
+    //static std::set<Nonogram> alreadyGenerated;
 
-    if (index < vertNumbers.size() * horiNumbers.size()) {
-
-        if (solve(horiNumbers, vertNumbers, index + 1, curGrid, solution)) { return true; }
-
-        // Change value and generate again
-        curGrid[xIndex][yIndex] = true;
-        if (solve(horiNumbers, vertNumbers, index + 1, curGrid, solution)) { return true; }
-        else { return false; }
-
-    }
-    else if (index == vertNumbers.size() * horiNumbers.size()) {
-        if (isValid(horiNumbers, vertNumbers, curGrid)) { solution = curGrid; return true; }
-        return false;
-    }
-    else { return false; }
-
-}
-
-std::optional<NonogramData> generate(const NonogramGroups& horiNumbers, const NonogramGroups& vertNumbers, int index, NonogramData nonogram) {
-
-    static std::set<NonogramData> alreadyGenerated;
-
-    const int rows = horiNumbers.size();
-    const int cols = vertNumbers.size();
+    const int rows = topClues.size();
+    const int cols = sideClues.size();
 
     if (index >= rows * cols) { 
-        static int boardsGenerated = 0;
-        std::cout << ++boardsGenerated << "\n";
-        if (!alreadyGenerated.insert(nonogram).second) { std::cout << "Already Generated!\n";  exit(-1); }
-        else if (isValid(horiNumbers, vertNumbers, nonogram)) {
+       // static int boardsGenerated = 0;
+       //std::cout << ++boardsGenerated << "\n";
+        //if (!alreadyGenerated.insert(nonogram).second) { std::cout << "Already Generated!\n";  exit(-1); }
+        if (isValid(topClues, sideClues, nonogram)) {
           
             return std::optional{ nonogram };
         }
@@ -143,34 +148,34 @@ std::optional<NonogramData> generate(const NonogramGroups& horiNumbers, const No
     }
 
     // Convert index to X,Y coordinates
-    int xIndex = index % vertNumbers.size();
-    int yIndex = index / vertNumbers.size();
+    int xIndex = index % sideClues.size();
+    int yIndex = index / sideClues.size();
 
-    auto option1 = generate(horiNumbers, vertNumbers, index + 1, nonogram);
+    auto option1 = generate(topClues, sideClues, index + 1, nonogram);
 
     nonogram[xIndex][yIndex] = true;
-    auto option2 = generate(horiNumbers, vertNumbers, index + 1, nonogram);
+    auto option2 = generate(topClues, sideClues, index + 1, nonogram);
 
     return option1 == std::nullopt ? option2 : option1;
 
 }
 
-std::optional<NonogramData> solve(const NonogramGroups& horiNumbers, const NonogramGroups& vertNumbers) {
+PossibleSoluton solve(const Clues& topClues, const Clues& sideClues) {
     
-    NonogramData nonogramData;
+    Nonogram nonogramData;
 
     // Init with all false
-    for (int col = 0; col < vertNumbers.size(); ++col) {
-        nonogramData.push_back(NonogramRow(horiNumbers.size(), false));
+    for (int col = 0; col < sideClues.size(); ++col) {
+        nonogramData.push_back(NonogramRow(topClues.size(), false));
     }
 
-    return generate(horiNumbers, vertNumbers, 0, nonogramData);
+    return generate(topClues, sideClues, 0, nonogramData);
 
 }
 
-static Nonogram createNonogram() {
+static std::tuple<Nonogram, Clues, Clues>  createNonogram() {
 
-    NonogramData nonogram;
+    Nonogram nonogram;
 
     nonogram.push_back({ false, false, true, false, false });
     nonogram.push_back({ false, true, true, true, false });
@@ -178,21 +183,22 @@ static Nonogram createNonogram() {
     nonogram.push_back({ false, false, true, false, false });
     nonogram.push_back({ false, false, true, false, false });
 
-    NonogramGroups horiGroups = { { 1 }, { 1 }, { 5 }, { 1 }, { 1 } };
-    NonogramGroups vertGroups = { { 1 }, { 3 }, { { 1, 1, 1 } }, { 1 }, { 1 } };
+    Clues topClues = { { 1 }, { 1 }, { 5 }, { 1 }, { 1 } };
+    Clues sideClues = { { 1 }, { 3 }, { { 1, 1, 1 } }, { 1 }, { 1 } };
 
-    return { nonogram, { horiGroups, vertGroups } };
+    return { nonogram, topClues, sideClues };
 
 }
 
 int main() {
 
-    NonogramGroups horiGroups = { { 2 }, { 2 }, { 1 } };
-    NonogramGroups vertGroups = { { 1 }, { 2 }, { { 1, 1 } } };
+    Clues topClues = { { 2 }, { 2 }, { 1 } };
+    Clues sideClues = { { 1 }, { 2 }, { { 1, 1 } } };
 
-    //NonogramData solved = solve( horiGroups, vertGroups );
-    bool valid = isValid(createNonogram().second.first, createNonogram().second.second, createNonogram().first);
-    std::optional<NonogramData> solved = solve(horiGroups, vertGroups);
+    auto [nonogram, defNonoHori, defNonoVert] = createNonogram();
+    bool valid = isValid(defNonoHori, defNonoVert, nonogram);
 
-    return solved.has_value() ? 1 : 0;
+    std::cout << solve(topClues, sideClues);
+
+    return 0;
 }
