@@ -37,7 +37,7 @@ std::ostream& operator<<(std::ostream& os, const PossibleSolution& possibleSolut
 
     // No solution
     else {
-        os << "No solution found" << std::endl;
+        os << "No solution found" << "\n";
     }
 
     return os;
@@ -172,32 +172,45 @@ PossibleSolution solve(const Clues& topClues, const Clues& sideClues) {
 
 }
 
-static std::tuple<Nonogram, Clues, Clues>  createNonogram() {
+static std::pair<Clues, Clues>  create3x3Puzzle() {
 
-    Nonogram nonogram;
-
-    nonogram.push_back({ false, false, true, false, false });
-    nonogram.push_back({ false, true, true, true, false });
-    nonogram.push_back({ true, false, true, false, true });
-    nonogram.push_back({ false, false, true, false, false });
-    nonogram.push_back({ false, false, true, false, false });
+    // Solution
+    // 
+    // OXO
+    // XXO
+    // XOX
 
     Clues topClues = { { 1 }, { 1 }, { 5 }, { 1 }, { 1 } };
     Clues sideClues = { { 1 }, { 3 }, { { 1, 1, 1 } }, { 1 }, { 1 } };
 
-    return { nonogram, topClues, sideClues };
+    return { topClues, sideClues };
+
+}
+
+static std::pair<Clues, Clues>  create5x5Puzzle() {
+
+    // Solution
+    // 
+    // OOXOO
+    // OXXXO
+    // XOXOX
+    // OOXOO
+    // OOXOO
+
+    Clues topClues = { { 1 }, { 1 }, { 5 }, { 1 }, { 1 } };
+    Clues sideClues = { { 1 }, { 3 }, { { 1, 1, 1 } }, { 1 }, { 1 } };
+
+    return { topClues, sideClues };
 
 }
 
 int main() {
 
-    Clues topClues = { { 2 }, { 2 }, { 1 } };
-    Clues sideClues = { { 1 }, { 2 }, { { 1, 1 } } };
+    auto [ topCluesSmall, sideCluesSmall] = create3x3Puzzle();
+    auto [ topCluesMed, sideCluesMed] = create5x5Puzzle();
 
-    auto [ nonogram, defaultTopClues, defaultSideClues] = createNonogram();
-    bool valid = isValid(defaultTopClues, defaultSideClues, nonogram);
-
-    std::cout << solve(topClues, sideClues);
+    std::cout << "3x3 Solution:\n" << solve(topCluesSmall, sideCluesSmall) << "\n";
+    std::cout << "5x5 Solution:\n" << solve(topCluesMed, topCluesMed) << std::endl;
 
     return 0;
 }
