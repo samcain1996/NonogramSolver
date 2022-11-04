@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+*.vs
+
+*.sln
+
+*.vcxproj*
+
+/x64
+NonogramSolver/x64/
+NonogramSolver/obj/
