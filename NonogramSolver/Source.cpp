@@ -134,14 +134,14 @@ PossibleSolution solve(const Clues& topClues, const Clues& sideClues, int index,
 
     if (index >= topClues.size() * sideClues.size()) {
         if (isValid(topClues, sideClues, nonogram)) {
-            std::cout << std::to_string(boardsGenerated) << "\n";
+            // std::cout << std::to_string(boardsGenerated) << "\n";
             return PossibleSolution{ nonogram };
         }
         else { return std::nullopt; }
 
     }
     else if (isValid(topClues, sideClues, nonogram)) { 
-        std::cout << std::to_string(boardsGenerated) << "\n"; 
+        // std::cout << std::to_string(boardsGenerated) << "\n"; 
         return PossibleSolution{ nonogram }; 
     }
 
@@ -149,11 +149,11 @@ PossibleSolution solve(const Clues& topClues, const Clues& sideClues, int index,
     int xIndex = index % sideClues.size();
     int yIndex = index / sideClues.size();
 
-    auto option1 = solve(topClues, sideClues, index + 1, nonogram);
+    PossibleSolution option1 = solve(topClues, sideClues, index + 1, nonogram);
 
     nonogram[xIndex][yIndex] = true;
-    auto option2 = solve(topClues, sideClues, index + 1, nonogram);
-    boardsGenerated++;
+    PossibleSolution option2 = solve(topClues, sideClues, index + 1, nonogram);
+    // boardsGenerated++;
 
     return option1.has_value() ? option1 : option2;
 
