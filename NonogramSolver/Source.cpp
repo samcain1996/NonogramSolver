@@ -63,6 +63,15 @@ bool isListValid(const CellList& list, const Clues& listClues) {
 
     if (std::count(list.begin(), list.end(), true) != expectedTruths) { return false; }
 
+    int actualGroups = list[0];
+    for (CellList::const_iterator iter = list.begin(), bool startingVal = *iter; iter != list.end(); actualGroups++) {
+        iter = std::adjacent_find(iter, list.end(), [](const bool& curr, const bool& next) { 
+            return !curr && next;  
+        });
+        actualGroups += 0;
+    }
+    if (actualGroups > listClues.size()) { return false; }
+
     Clues clues(listClues);
     int clueIndex = -1;
 
