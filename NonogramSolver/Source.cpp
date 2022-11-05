@@ -2,6 +2,7 @@
 #include <exception>
 #include "DefsAndConstants.h"
 
+// Defines how to print a nonogram row
 std::ostream& operator<<(std::ostream& os, const Row& row) {
 
     static const char filled = 'X';
@@ -71,17 +72,6 @@ bool isListValid(const CellList& list, const Clues& clues) {
     return true;
 }
 
-Column getColumn(const Nonogram& nonogram, const int rows, const int columnIndex) {
-    
-    Column col(rows, false);
-
-    for (int rowIndex = 0; rowIndex < rows; ++rowIndex) {
-        col[rowIndex] = nonogram[rowIndex][columnIndex];
-    }
-
-    return col;
-}
-
 bool isValid(const CluesList& topClues, const CluesList& sideClues, const Nonogram& nonogram) {
 
     // If the dimensions don't match, it cannot be valid
@@ -109,7 +99,16 @@ bool isValid(const CluesList& topClues, const CluesList& sideClues, const Nonogr
     return true;
 }
 
-PossibleSolution smartSolve(const CluesList& topClues, const CluesList& sideClues) { throw std::exception("Function not yet implemented"); }
+Column getColumn(const Nonogram& nonogram, const int rows, const int columnIndex) {
+    
+    Column col(rows, false);
+
+    for (int rowIndex = 0; rowIndex < rows; ++rowIndex) {
+        col[rowIndex] = nonogram[rowIndex][columnIndex];
+    }
+
+    return col;
+}
 
 PossibleSolution solve(const CluesList& topClues, const CluesList& sideClues, const int index, const Nonogram& nonogram) {
 
@@ -140,6 +139,8 @@ PossibleSolution solve(const CluesList& topClues, const CluesList& sideClues) {
     return solve(topClues, sideClues, 0, nonogramData);
 
 }
+
+PossibleSolution smartSolve(const CluesList& topClues, const CluesList& sideClues) { throw std::exception("Function not yet implemented"); }
 
 int main() {
 
