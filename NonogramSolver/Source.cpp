@@ -34,6 +34,17 @@ std::ostream& operator<<(std::ostream& os, const PossibleSolution& possibleSolut
 
 }
 
+Column getColumn(const Nonogram& nonogram, const int rows, const int columnIndex) {
+    
+    Column col(rows, false);
+
+    for (int rowIndex = 0; rowIndex < rows; ++rowIndex) {
+        col[rowIndex] = nonogram[rowIndex][columnIndex];
+    }
+
+    return col;
+}
+
 // Returns whether the size of the nanogram matches the clues
 bool validDimensions(const Nonogram& nonogram, const CluesList& topClues, const CluesList& sideClues) {
 
@@ -97,17 +108,6 @@ bool isValid(const CluesList& topClues, const CluesList& sideClues, const Nonogr
     }
 
     return true;
-}
-
-Column getColumn(const Nonogram& nonogram, const int rows, const int columnIndex) {
-    
-    Column col(rows, false);
-
-    for (int rowIndex = 0; rowIndex < rows; ++rowIndex) {
-        col[rowIndex] = nonogram[rowIndex][columnIndex];
-    }
-
-    return col;
 }
 
 PossibleSolution solve(const CluesList& topClues, const CluesList& sideClues, const int index, const Nonogram& nonogram) {
