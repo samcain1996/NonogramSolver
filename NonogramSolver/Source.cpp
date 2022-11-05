@@ -4,7 +4,7 @@
 #include <string>
 #include <chrono>
 #include <algorithm>
-// #include <set>
+#include <numeric>
 
 using CellList = std::vector<bool>;
 using Clues = std::vector<int>;
@@ -55,54 +55,42 @@ bool validDimensions(const Nonogram& nonogram, const CluesList& topClues, const 
 
 }
 
+bool validNumberOfGroups(const CellList& list, const int expected) {
+
+    CellList::const_iterator iter = list.begin();
+    int actualGroups = (int)*iter;  // If the first cell is true, then mark that as a group
+
+    while (iter != list.end() && actualGroups < expected) {
+        // Find next group ( false (blank) cell preceding true (filled) cell )
+        iter = std::adjacent_find(iter, list.end(), [](const bool& curr, const bool& next) { return !curr && next; });
+
+        if (iter != list.end()) { actualGroups++; iter++; }
+    }
+
+    return actualGroups == expected;
+}
+
 // Returns whether an individual row or column is valid
-bool isListValid(const CellList& list, const Clues& listClues) {
+bool isListValid(const CellList& list, const Clues& clues) {
 
-    int expectedTruths = 0;
-    std::for_each(listClues.begin(), listClues.end(), [&expectedTruths](const int& clue) { expectedTruths += clue; });
+    const int actualTruths = std::count(list.begin(), list.end(), true);
+    const int expectedTruths = std::accumulate(clues.begin(), clues.end(), 0);
 
-    if (std::count(list.begin(), list.end(), true) != expectedTruths) { return false; }
+    if (actualTruths != expectedTruths) { return false; }
+    if (!validNumberOfGroups(list, clues.size())) { return false; }
 
-    int actualGroups = list[0];
-    for (CellList::const_iterator iter = list.begin(), bool startingVal = *iter; iter != list.end(); actualGroups++) {
-        iter = std::adjacent_find(iter, list.end(), [](const bool& curr, const bool& next) { 
-            return !curr && next;  
-        });
-        actualGroups += 0;
-    }
-    if (actualGroups > listClues.size()) { return false; }
+    return true;
+}
 
-    Clues clues(listClues);
-    int clueIndex = -1;
+ CellList getColumn(const Nonogram& nonogram, const int rows, const int columnIndex) {
+    
+    CellList col(rows, false);
 
-    bool prev = false;
-
-    for (const bool& element : list) {
-
-        // Group starts when element goes from false to true
-        if (element) {
-
-            if (!prev) {
-
-                // If there are still elements left in current group OR 
-                // the next group index is out of bounds, return false
-                if ((clueIndex != -1 && clues[clueIndex] > 0) || ++clueIndex >= clues.size()) {
-                    return false;
-                }
-            }
-
-            clues[clueIndex]--;
-        }
-        else if (!element) { goto setPrev; }
-
-        if (clues[clueIndex] < 0) { return false; }
-
-        setPrev:
-        prev = element;
-
+    for (int rowIndex = 0; rowIndex < rows; ++rowIndex) {
+        col[rowIndex] = nonogram[rowIndex][columnIndex];
     }
 
-    return std::none_of(clues.begin(), clues.end(), [](const int& clue) { return clue != 0; });
+    return col;
 }
 
 bool isValid(const CluesList& topClues, const CluesList& sideClues, const Nonogram& nonogram) {
@@ -116,33 +104,18 @@ bool isValid(const CluesList& topClues, const CluesList& sideClues, const Nonogr
 
     // Check rows
     for (int x = 0; x < rows; ++x) {
-
-        const CellList& row = nonogram[x];
-        const Clues& clues(sideClues[x]);
-
-
-        if (!isListValid(row, clues)) { return false; }
-
+        if (!isListValid(nonogram[x], sideClues[x])) { return false; }
     }
     
     // Check columns
     for (int y = 0; y < cols; ++y) {
-
-        CellList col(rows, false);
-        for (int i = 0; i < rows; i++) {
-            col[i] = nonogram[i][y];
-        }
-
-        if (!isListValid(col, topClues[y])) { return false; }
-
+        if (!isListValid(getColumn(nonogram, rows, y), topClues[y])) { return false; }
     }
 
     return true;
 }
 
-PossibleSolution solve(const CluesList& topClues, const CluesList& sideClues, const int index, Nonogram nonogram) {
-
-    // static int boardsGenerated = 0;
+PossibleSolution solve(const CluesList& topClues, const CluesList& sideClues, const int index, const Nonogram& nonogram) {
 
     if (isValid(topClues, sideClues, nonogram)) {
         return PossibleSolution{ nonogram };
@@ -153,11 +126,12 @@ PossibleSolution solve(const CluesList& topClues, const CluesList& sideClues, co
     const int x = index % sideClues.size();
     const int y = index / sideClues.size();
 
+    Nonogram copy(nonogram);
+
     PossibleSolution option1 = solve(topClues, sideClues, index + 1, nonogram);
 
-    nonogram[x][y] = true;
-    PossibleSolution option2 = solve(topClues, sideClues, index + 1, nonogram);
-    // boardsGenerated++;
+    copy[x][y] = true;
+    PossibleSolution option2 = solve(topClues, sideClues, index + 1, copy);
 
     return option1.has_value() ? option1 : option2;
 
