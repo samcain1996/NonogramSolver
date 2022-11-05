@@ -1,48 +1,36 @@
-#include <vector>
 #include <iostream>
-#include <optional>
-#include <string>
-#include <chrono>
-#include <algorithm>
-#include <numeric>
+#include <exception>
+#include "DefsAndConstants.h"
 
-using CellList = std::vector<bool>;
-using Clues = std::vector<int>;
+std::ostream& operator<<(std::ostream& os, const Row& row) {
 
-using Nonogram = std::vector<CellList>;
-using CluesList = std::vector<Clues>;
+    static const char filled = 'X';
+    static const char empty = 'O';
 
-using PossibleSolution = std::optional<Nonogram>;
+    std::string rowStr = "";
+    std::for_each(row.begin(), row.end(), [&rowStr](const auto& element) { rowStr += element ? filled : empty; });
+
+    return os << rowStr << "\n";
+
+}
 
 // Defines how to print a solution
 std::ostream& operator<<(std::ostream& os, const PossibleSolution& possibleSolution) {
 
     if (possibleSolution.has_value()) {
-        
+
         const Nonogram& solution = possibleSolution.value();
-        const int numberOfYUnits = solution.size();
-        const int numberofXUnits = solution[0].size();
 
-        for (int x = 0; x < numberofXUnits; ++x) {
+        // Print each row in solution
+        std::for_each(solution.begin(), solution.end(), [](const Row& row) { std::cout << row; });
 
-            std::string rowStr = "";
-
-            for (int y = 0; y < numberOfYUnits; ++y) {
-                rowStr += solution[x][y] ? "X" : "O";
-            }
-            os << rowStr << "\n";
-        }
-
-        os << "\n";
+        return os << "\n";
 
     }
 
     // No solution
-    else {
-        os << "No solution found" << "\n";
-    }
+    return os << "No solution found" << "\n";
 
-    return os;
 }
 
 // Returns whether the size of the nanogram matches the clues
@@ -55,6 +43,7 @@ bool validDimensions(const Nonogram& nonogram, const CluesList& topClues, const 
 
 }
 
+// Returns whether the number of groups of 'true' match how many are expected
 bool validNumberOfGroups(const CellList& list, const int expected) {
 
     CellList::const_iterator iter = list.begin();
@@ -73,18 +62,18 @@ bool validNumberOfGroups(const CellList& list, const int expected) {
 // Returns whether an individual row or column is valid
 bool isListValid(const CellList& list, const Clues& clues) {
 
-    const int actualTruths = std::count(list.begin(), list.end(), true);
-    const int expectedTruths = std::accumulate(clues.begin(), clues.end(), 0);
+    const int actualFilled = std::count(list.begin(), list.end(), true);
+    const int expectedFilled = std::accumulate(clues.begin(), clues.end(), 0);
 
-    if (actualTruths != expectedTruths) { return false; }
-    if (!validNumberOfGroups(list, clues.size())) { return false; }
+    if (actualFilled != expectedFilled || 
+        !validNumberOfGroups(list, clues.size())) [[likely]] { return false; }
 
     return true;
 }
 
- CellList getColumn(const Nonogram& nonogram, const int rows, const int columnIndex) {
+Column getColumn(const Nonogram& nonogram, const int rows, const int columnIndex) {
     
-    CellList col(rows, false);
+    Column col(rows, false);
 
     for (int rowIndex = 0; rowIndex < rows; ++rowIndex) {
         col[rowIndex] = nonogram[rowIndex][columnIndex];
@@ -104,25 +93,32 @@ bool isValid(const CluesList& topClues, const CluesList& sideClues, const Nonogr
 
     // Check rows
     for (int x = 0; x < rows; ++x) {
-        if (!isListValid(nonogram[x], sideClues[x])) { return false; }
+
+        if (!isListValid(nonogram[x], sideClues[x])) [[likely]] { return false; }
+
     }
     
     // Check columns
     for (int y = 0; y < cols; ++y) {
-        if (!isListValid(getColumn(nonogram, rows, y), topClues[y])) { return false; }
+
+        Column col = getColumn(nonogram, rows, y);
+        if (!isListValid(col, topClues[y])) [[likely]] { return false; }
+
     }
 
     return true;
 }
 
+PossibleSolution smartSolve(const CluesList& topClues, const CluesList& sideClues) { throw std::exception("Function not yet implemented"); }
+
 PossibleSolution solve(const CluesList& topClues, const CluesList& sideClues, const int index, const Nonogram& nonogram) {
 
-    if (isValid(topClues, sideClues, nonogram)) {
+    if (isValid(topClues, sideClues, nonogram)) [[unlikely]] {
         return PossibleSolution{ nonogram };
     }
     else if (index >= topClues.size() * sideClues.size()) { return std::nullopt; }
 
-    // Convert index to X,Y coordinates
+    // Convert 1-D index to 2-D X,Y coordinates
     const int x = index % sideClues.size();
     const int y = index / sideClues.size();
 
@@ -145,82 +141,34 @@ PossibleSolution solve(const CluesList& topClues, const CluesList& sideClues) {
 
 }
 
-static std::pair<CluesList, CluesList>  create3x3Puzzle() {
-
-    // Solution
-    // 
-    // OXO
-    // XXO
-    // XOX
-
-    CluesList topClues = { { 2 }, { 2 }, { 1 } };
-    CluesList sideClues = { { 1 }, { 2 }, { { 1, 1 } } };
-
-    return { topClues, sideClues };
-
-}
-
-static std::pair<CluesList, CluesList>  create4x4Puzzle() {
-
-    // Solution
-    //
-    // XOXO
-    // XXXX
-    // OOXX
-    // OOXO
-
-    CluesList topClues = { 
-        { 2 }, { 1 }, { 4 }, { 2 } 
-    };
-    CluesList sideClues = { 
-        { { 1, 1 } }, { 4 }, { 2 }, { 1 } 
-    };
-
-    return { topClues, sideClues };
-}
-
-static std::pair<CluesList, CluesList>  create5x5Puzzle() {
-
-    // Solution
-    // 
-    // OOXOO
-    // OXXXO
-    // XOXOX
-    // OOXOO
-    // OOXOO
-
-    CluesList topClues = { { 1 }, { 1 }, { 5 }, { 1 }, { 1 } };
-    CluesList sideClues = { { 1 }, { 3 }, { { 1, 1, 1 } }, { 1 }, { 1 } };
-
-    return { topClues, sideClues };
-
-}
-
 int main() {
 
+    using namespace std::chrono;
+
+    // 3 Puzzles of size 3x3, 4x4, and 5x5
     auto [ topCluesTiny, sideCluesTiny] = create3x3Puzzle();
     auto [ topCluesSmall, sideCluesSmall] = create4x4Puzzle();
     auto [ topCluesMed, sideCluesMed] = create5x5Puzzle();
 
-    auto begin = std::chrono::high_resolution_clock::now();
+    // Tiny 3x3
+    auto begin = high_resolution_clock::now();
     auto solution = solve(topCluesTiny, sideCluesTiny);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto delta = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-
+    auto end = high_resolution_clock::now();
+    auto delta = duration_cast<microseconds>(end - begin).count();
     std::cout << "3x3 Solution:\n" << solution << "Time: " << std::to_string(delta) << " microseconds\n\n";
 
-    begin = std::chrono::high_resolution_clock::now();
+    // Small 4x4
+    begin = high_resolution_clock::now();
     solution = solve(topCluesSmall, sideCluesSmall);
-    end = std::chrono::high_resolution_clock::now();
-    delta = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-
+    end = high_resolution_clock::now();
+    delta = duration_cast<microseconds>(end - begin).count();
     std::cout << "4x4 Solution:\n" << solution << "Time: " << std::to_string(delta) << " microseconds\n\n";
 
-    begin = std::chrono::high_resolution_clock::now();
+    // Medium 5x5
+    begin = high_resolution_clock::now();
     solution = solve(topCluesMed, sideCluesMed);
-    end = std::chrono::high_resolution_clock::now();
-    delta = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-
+    end = high_resolution_clock::now();
+    delta = duration_cast<microseconds>(end - begin).count();
     std::cout << "5x5 Solution:\n" << solution << "Time: " << std::to_string(delta) << " microseconds\n\n";
 
     return 0;
