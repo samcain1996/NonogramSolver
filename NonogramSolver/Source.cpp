@@ -129,21 +129,12 @@ bool isValid(const Clues& topClues, const Clues& sideClues, const Nonogram& nono
 
 PossibleSolution solve(const Clues& topClues, const Clues& sideClues, int index, Nonogram nonogram) {
 
-    static int boardsGenerated = 0;
+    // static int boardsGenerated = 0;
 
-
-    if (index >= topClues.size() * sideClues.size()) {
-        if (isValid(topClues, sideClues, nonogram)) {
-            // std::cout << std::to_string(boardsGenerated) << "\n";
-            return PossibleSolution{ nonogram };
-        }
-        else { return std::nullopt; }
-
+    if (isValid(topClues, sideClues, nonogram)) {
+        return PossibleSolution{ nonogram };
     }
-    else if (isValid(topClues, sideClues, nonogram)) { 
-        // std::cout << std::to_string(boardsGenerated) << "\n"; 
-        return PossibleSolution{ nonogram }; 
-    }
+    else if (index >= topClues.size() * sideClues.size()) { return std::nullopt; }
 
     // Convert index to X,Y coordinates
     int xIndex = index % sideClues.size();
@@ -161,12 +152,7 @@ PossibleSolution solve(const Clues& topClues, const Clues& sideClues, int index,
 
 PossibleSolution solve(const Clues& topClues, const Clues& sideClues) {
     
-    Nonogram nonogramData;
-
-    // Init with all false
-    for (int col = 0; col < sideClues.size(); ++col) {
-        nonogramData.push_back(NonogramRow(topClues.size(), false));
-    }
+    Nonogram nonogramData(sideClues.size(), NonogramRow(topClues.size(), false));
 
     return solve(topClues, sideClues, 0, nonogramData);
 
@@ -180,8 +166,8 @@ static std::pair<Clues, Clues>  create3x3Puzzle() {
     // XXO
     // XOX
 
-    Clues topClues = { { 1 }, { 1 }, { 5 }, { 1 }, { 1 } };
-    Clues sideClues = { { 1 }, { 3 }, { { 1, 1, 1 } }, { 1 }, { 1 } };
+    Clues topClues = { { 2 }, { 2 }, { 1 } };
+    Clues sideClues = { { 1 }, { 2 }, { { 1, 1 } } };
 
     return { topClues, sideClues };
 
@@ -210,7 +196,7 @@ int main() {
     auto [ topCluesMed, sideCluesMed] = create5x5Puzzle();
 
     std::cout << "3x3 Solution:\n" << solve(topCluesSmall, sideCluesSmall) << "\n";
-    std::cout << "5x5 Solution:\n" << solve(topCluesMed, topCluesMed) << std::endl;
+    std::cout << "5x5 Solution:\n" << solve(topCluesMed, sideCluesMed) << std::endl;
 
     return 0;
 }
