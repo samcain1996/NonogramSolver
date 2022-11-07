@@ -58,8 +58,8 @@ bool validDimensions(const Nonogram& nonogram, const CluesList& topClues, const 
 // Returns whether the number of groups of 'true' match how many are expected
 bool validNumberOfGroups(const CellList& list, const int expected) {
 
-    CellList::const_iterator iter = list.begin();
-    int actualGroups = (int)*iter;  // If the first cell is true, then mark that as a group
+    auto iter = list.begin();
+    int actualGroups = list[0];  // If the first cell is true, then mark that as a group
 
     while (iter != list.end() && actualGroups < expected) {
         // Find next group ( false (blank) cell preceding true (filled) cell )
